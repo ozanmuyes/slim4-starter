@@ -19,6 +19,8 @@ return function (ContainerBuilder $containerBuilder) {
             return $logger;
         },
 
+        // NOTE As of writing this project Slim-Twig for Slim 4 was beta,
+        //      in order to use Twig we have these two dependencies.
         Twig\Environment::class => function (ContainerInterface $c) {
             /** @var array $settings */
             $settings = $c->get('settings')['view'];
@@ -30,7 +32,6 @@ return function (ContainerBuilder $containerBuilder) {
 
             return $twig;
         },
-
         App\View::class => function (ContainerInterface $c) {
             $twig = $c->get(Twig\Environment::class);
             $view = new App\View($twig);
