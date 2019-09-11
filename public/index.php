@@ -18,7 +18,6 @@ require __DIR__ . "/../vendor/autoload.php";
 $dotenv = Dotenv::create(__DIR__ . '/../');
 $dotenv->load();
 
-/*
 // Instantiate and register Whoops
 if (getenv('APP_DEBUG') === 'true') {
     $whoops = new Whoops\Run();
@@ -28,7 +27,6 @@ if (getenv('APP_DEBUG') === 'true') {
     // Set Whoops as the default error and exception handler used by PHP:
     $whoops->register();
 } // ...actually let the server handle the 500 (no `else` here)
-*/
 
 // Instantiate the container builder
 $containerBuilder = new ContainerBuilder();
@@ -51,8 +49,7 @@ $dependencies($containerBuilder);
 $container = $containerBuilder->build();
 
 // Instantiate the app
-/*AppFactory::setContainer($container);
-$app = AppFactory::create();*/
+// See http://php-di.org/doc/frameworks/slim.html#setup
 $app = DI\Bridge\Slim\Bridge::create($container);
 $callableResolver = $app->getCallableResolver();
 
@@ -79,20 +76,24 @@ $creator = new ServerRequestCreator(
 );
 $request = $creator->fromGlobals();
 
-// Create Error Handler
-$responseFactory = $app->getResponseFactory();
-$errorHandler = new HttpErrorHandler($callableResolver, $responseFactory);
+if (getenv('APP_DEBUG') !== 'true') {
+    // Create Error Handler
+    $responseFactory = $app->getResponseFactory();
+    $errorHandler = new HttpErrorHandler($callableResolver, $responseFactory);
 
-// Create Shutdown Handler
-$shutdownHandler = new ShutdownHandler($request, $errorHandler, $displayErrorDetails);
-register_shutdown_function($shutdownHandler);
+    // Create Shutdown Handler
+    $shutdownHandler = new ShutdownHandler($request, $errorHandler, $displayErrorDetails);
+    register_shutdown_function($shutdownHandler);
+}
 
 // Add Routing Middleware
 $app->addRoutingMiddleware();
 
-// Add Error Middleware
-$errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, true, true);
-$errorMiddleware->setDefaultErrorHandler($errorHandler);
+if (getenv('APP_DEBUG') !== 'true') {
+    // Add Error Middleware
+    $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, true, true);
+    $errorMiddleware->setDefaultErrorHandler($errorHandler);
+}
 
 // Run App & Emit Response
 $response = $app->handle($request);
